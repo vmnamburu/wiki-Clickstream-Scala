@@ -1,5 +1,5 @@
 
-This note is to demonstrate how to analyse clickstream data from Wikipedia using pyspark. This example covers analysis of Feb 2015 clickstream file.
+This note is to demonstrate how to analyse clickstream data from Wikipedia using Spark and Scala. This example covers analysis of Feb 2015 clickstream file.
 
 __Tools Used__
 
