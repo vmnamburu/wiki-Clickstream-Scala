@@ -124,42 +124,41 @@ clickRDDCase.take(2).foreach(println)
 
 
 
-#### 2.4 Create a Dataframe from the RDD
+#### 2.3 Create a Dataframe from the RDD
 
 
 ```python
-clickDF = sqlCtx.createDataFrame(clickRDD)
+var clickDF = clickRDDCase.toDF();
 clickDF.show()
 ```
+```
++--------+--------+---+--------------------+-------------+-----+
+| prev_id| curr_id|cnt|          prev_title|   curr_title|  typ|
++--------+--------+---+--------------------+-------------+-----+
+|        | 3632887|121|        other-google|           !!|other|
+|        | 3632887| 93|     other-wikipedia|           !!|other|
+|        | 3632887| 46|         other-empty|           !!|other|
+|        | 3632887| 10|         other-other|           !!|other|
+|   64486| 3632887| 11|  !_(disambiguation)|           !!|other|
+| 2061699| 2556962| 19|       Louden_Up_Now|  !!!_(album)| link|
+|        | 2556962| 25|         other-empty|  !!!_(album)|other|
+|        | 2556962| 16|        other-google|  !!!_(album)|other|
+|        | 2556962| 44|     other-wikipedia|  !!!_(album)|other|
+|   64486| 2556962| 15|  !_(disambiguation)|  !!!_(album)| link|
+|  600744| 2556962|297|                 !!!|  !!!_(album)| link|
+|        | 6893310| 11|         other-empty|!Hero_(album)|other|
+| 1921683| 6893310| 26|               !Hero|!Hero_(album)| link|
+|        | 6893310| 16|     other-wikipedia|!Hero_(album)|other|
+|        | 6893310| 23|        other-google|!Hero_(album)|other|
+| 8127304|22602473| 16|     Jericho_Rosales|   !Oka_Tokat| link|
+|35978874|22602473| 20|List_of_telenovel...|   !Oka_Tokat| link|
+|        |22602473| 57|        other-google|   !Oka_Tokat|other|
+|        |22602473| 12|     other-wikipedia|   !Oka_Tokat|other|
+|        |22602473| 23|         other-empty|   !Oka_Tokat|other|
++--------+--------+---+--------------------+-------------+-----+
+only showing top 20 rows
 
-    +--------+-------------+---+--------+--------------------+-----+
-    | curr_id|   curr_title|  n| prev_id|          prev_title| type|
-    +--------+-------------+---+--------+--------------------+-----+
-    | 3632887|           !!|121|      -1|        other-google|other|
-    | 3632887|           !!| 93|      -1|     other-wikipedia|other|
-    | 3632887|           !!| 46|      -1|         other-empty|other|
-    | 3632887|           !!| 10|      -1|         other-other|other|
-    | 3632887|           !!| 11|   64486|  !_(disambiguation)|other|
-    | 2556962|  !!!_(album)| 19| 2061699|       Louden_Up_Now| link|
-    | 2556962|  !!!_(album)| 25|      -1|         other-empty|other|
-    | 2556962|  !!!_(album)| 16|      -1|        other-google|other|
-    | 2556962|  !!!_(album)| 44|      -1|     other-wikipedia|other|
-    | 2556962|  !!!_(album)| 15|   64486|  !_(disambiguation)| link|
-    | 2556962|  !!!_(album)|297|  600744|                 !!!| link|
-    | 6893310|!Hero_(album)| 11|      -1|         other-empty|other|
-    | 6893310|!Hero_(album)| 26| 1921683|               !Hero| link|
-    | 6893310|!Hero_(album)| 16|      -1|     other-wikipedia|other|
-    | 6893310|!Hero_(album)| 23|      -1|        other-google|other|
-    |22602473|   !Oka_Tokat| 16| 8127304|     Jericho_Rosales| link|
-    |22602473|   !Oka_Tokat| 20|35978874|List_of_telenovel...| link|
-    |22602473|   !Oka_Tokat| 57|      -1|        other-google|other|
-    |22602473|   !Oka_Tokat| 12|      -1|     other-wikipedia|other|
-    |22602473|   !Oka_Tokat| 23|      -1|         other-empty|other|
-    +--------+-------------+---+--------+--------------------+-----+
-    only showing top 20 rows
-
-
-
+```
 ### 3 Analyse what are the top searches leading to Wikipedia in Feb 2015
 
 ### 3.1 Analyse the Clickstream using Spark Dataframes
@@ -168,86 +167,92 @@ clickDF.show()
 
 
 ```python
-def fromSearchProvider(prevTitle):
-    searchProviders = ['other-yahoo','other-bing','other-google']
-    if prevTitle in searchProviders:
-        return True
-    else:
-        return False
+def fromSearchProvider(prevTitle:String) : Boolean = {
+  val searchProviders = List("other-yahoo","other-bing","other-google")
+  if (searchProviders.contains(prevTitle))
+    {
+      return true
+    }
+  else
+    {
+      return false
+    }
+}
 ```
 
-##### 3.1.2 Create an UDF to supply fromSearchProvider as filter function
+##### 3.1.2 Convert function to an UDF to supply fromSearchProvider as filter function
 
 
 ```python
-search_filter = udf(fromSearchProvider,BooleanType())
-clickSearch = clickDF.filter(search_filter(clickDF.prev_title))
+val search_filter = udf(fromSearchProvider _)
+val clickSearch = clickDF.filter(search_filter($"prev_title"))
 clickSearch.show()
 ```
+```
++-------+--------+----+------------+--------------------+-----+
+|prev_id| curr_id| cnt|  prev_title|          curr_title|  typ|
++-------+--------+----+------------+--------------------+-----+
+|       | 3632887| 121|other-google|                  !!|other|
+|       | 2556962|  16|other-google|         !!!_(album)|other|
+|       | 6893310|  23|other-google|       !Hero_(album)|other|
+|       |22602473|  57|other-google|          !Oka_Tokat|other|
+|       | 6810768|  81|other-google|          !T.O.O.H.!|other|
+|       |  899480|  17|other-google|          "A"_Device|other|
+|       | 1282996|  10| other-yahoo|    "A"_Is_for_Alibi|other|
+|       | 1282996| 272|other-google|    "A"_Is_for_Alibi|other|
+|       | 9003666|  18|other-google|"And"_theory_of_c...|other|
+|       |39072529|  49|other-google|"Bassy"_Bob_Brock...|other|
+|       |25033979|  93|other-google|"C"_is_for_(Pleas...|other|
+|       |  331586|6820|other-google|  "Crocodile"_Dundee|other|
+|       |  331586| 274| other-yahoo|  "Crocodile"_Dundee|other|
+|       |  331586| 417|  other-bing|  "Crocodile"_Dundee|other|
+|       |16250593|  21|other-google| "D"_Is_for_Deadbeat|other|
+|       |39304968| 108|other-google|"David_Hockney:_A...|other|
+|       | 1896643|1227|other-google|"Dr._Death"_Steve...|other|
+|       | 1896643|  70| other-yahoo|"Dr._Death"_Steve...|other|
+|       | 1896643|  75|  other-bing|"Dr._Death"_Steve...|other|
+|       |16251903|  26|other-google| "E"_Is_for_Evidence|other|
++-------+--------+----+------------+--------------------+-----+
+only showing top 20 rows
 
-    +--------+--------------------+----+-------+------------+-----+
-    | curr_id|          curr_title|   n|prev_id|  prev_title| type|
-    +--------+--------------------+----+-------+------------+-----+
-    | 3632887|                  !!| 121|     -1|other-google|other|
-    | 2556962|         !!!_(album)|  16|     -1|other-google|other|
-    | 6893310|       !Hero_(album)|  23|     -1|other-google|other|
-    |22602473|          !Oka_Tokat|  57|     -1|other-google|other|
-    | 6810768|          !T.O.O.H.!|  81|     -1|other-google|other|
-    |  899480|          "A"_Device|  17|     -1|other-google|other|
-    | 1282996|    "A"_Is_for_Alibi|  10|     -1| other-yahoo|other|
-    | 1282996|    "A"_Is_for_Alibi| 272|     -1|other-google|other|
-    | 9003666|"And"_theory_of_c...|  18|     -1|other-google|other|
-    |39072529|"Bassy"_Bob_Brock...|  49|     -1|other-google|other|
-    |25033979|"C"_is_for_(Pleas...|  93|     -1|other-google|other|
-    |  331586|  "Crocodile"_Dundee|6820|     -1|other-google|other|
-    |  331586|  "Crocodile"_Dundee| 274|     -1| other-yahoo|other|
-    |  331586|  "Crocodile"_Dundee| 417|     -1|  other-bing|other|
-    |16250593| "D"_Is_for_Deadbeat|  21|     -1|other-google|other|
-    |39304968|"David_Hockney:_A...| 108|     -1|other-google|other|
-    | 1896643|"Dr._Death"_Steve...|1227|     -1|other-google|other|
-    | 1896643|"Dr._Death"_Steve...|  70|     -1| other-yahoo|other|
-    | 1896643|"Dr._Death"_Steve...|  75|     -1|  other-bing|other|
-    |16251903| "E"_Is_for_Evidence|  26|     -1|other-google|other|
-    +--------+--------------------+----+-------+------------+-----+
-    only showing top 20 rows
+```
 
-
-
-##### 3.1.3 Find the top pages referred from search Engines
+##### 3.1.2 Find the top pages referred from search Engines
 
 
 ```python
-searchVolume = clickSearch.groupBy(clickSearch.curr_title).agg(F.sum('n').alias('total_search')).orderBy('total_search',ascending=False)
-searchVolume.show()
+val clickSearchVolume = clickSearch.groupBy(col("curr_title")).agg(sum(col("cnt")).alias("total_search")).orderBy($"total_search".desc)
+clickSearchVolume.show()
 ```
 
-    +--------------------+------------+
-    |          curr_title|total_search|
-    +--------------------+------------+
-    |           Main_Page|     4171329|
-    |Fifty_Shades_of_Grey|     1903372|
-    |          Chris_Kyle|     1293055|
-    |    Alessandro_Volta|     1160284|
-    |     Stephen_Hawking|     1037257|
-    |    Better_Call_Saul|      989149|
-    |      Birdman_(film)|      982244|
-    |Fifty_Shades_of_G...|      877027|
-    |     Valentine's_Day|      831627|
-    | 87th_Academy_Awards|      794562|
-    |Islamic_State_of_...|      775541|
-    |    Chinese_New_Year|      740223|
-    |       Leonard_Nimoy|      683814|
-    |List_of_Bollywood...|      653926|
-    |        Bruce_Jenner|      629555|
-    |      Sia_(musician)|      618234|
-    |      Lunar_New_Year|      602595|
-    |      Dakota_Johnson|      598695|
-    |The_Walking_Dead_...|      581170|
-    |The_Flash_(2014_T...|      558487|
-    +--------------------+------------+
-    only showing top 20 rows
+```
++--------------------+------------+
+|          curr_title|total_search|
++--------------------+------------+
+|           Main_Page|     4171329|
+|Fifty_Shades_of_Grey|     1903372|
+|          Chris_Kyle|     1293055|
+|    Alessandro_Volta|     1160284|
+|     Stephen_Hawking|     1037257|
+|    Better_Call_Saul|      989149|
+|      Birdman_(film)|      982244|
+|Fifty_Shades_of_G...|      877027|
+|     Valentine's_Day|      831627|
+| 87th_Academy_Awards|      794562|
+|Islamic_State_of_...|      775541|
+|    Chinese_New_Year|      740223|
+|       Leonard_Nimoy|      683814|
+|List_of_Bollywood...|      653926|
+|        Bruce_Jenner|      629555|
+|      Sia_(musician)|      618234|
+|      Lunar_New_Year|      602595|
+|      Dakota_Johnson|      598695|
+|The_Walking_Dead_...|      581170|
+|The_Flash_(2014_T...|      558487|
++--------------------+------------+
+only showing top 20 rows
 
-
+```
 
 ####  3.2 Analysis using Spark SQL
 
@@ -255,42 +260,42 @@ searchVolume.show()
 
 
 ```python
-clickDF.registerTempTable('wikiclickstream')
+clickDF.registerTempTable("wikiclickstream")
 ```
 
 
 ```python
-clickSearchSQL = sqlCtx.sql("select curr_title,sum(n) as total_search from wikiclickstream where prev_title in ('other-yahoo','other-bing','other-google') group by curr_title order by total_search desc")
+clickSearchSQL = sqlContext.sql("select curr_title,sum(cnt) as total_search from wikiclickstream where prev_title in ('other-yahoo','other-bing','other-google') group by curr_title order by total_search desc")
 clickSearchSQL.show()
 ```
 
-    +--------------------+------------+
-    |          curr_title|total_search|
-    +--------------------+------------+
-    |           Main_Page|     4171329|
-    |Fifty_Shades_of_Grey|     1903372|
-    |          Chris_Kyle|     1293055|
-    |    Alessandro_Volta|     1160284|
-    |     Stephen_Hawking|     1037257|
-    |    Better_Call_Saul|      989149|
-    |      Birdman_(film)|      982244|
-    |Fifty_Shades_of_G...|      877027|
-    |     Valentine's_Day|      831627|
-    | 87th_Academy_Awards|      794562|
-    |Islamic_State_of_...|      775541|
-    |    Chinese_New_Year|      740223|
-    |       Leonard_Nimoy|      683814|
-    |List_of_Bollywood...|      653926|
-    |        Bruce_Jenner|      629555|
-    |      Sia_(musician)|      618234|
-    |      Lunar_New_Year|      602595|
-    |      Dakota_Johnson|      598695|
-    |The_Walking_Dead_...|      581170|
-    |The_Flash_(2014_T...|      558487|
-    +--------------------+------------+
-    only showing top 20 rows
-
-
+```
++--------------------+------------+
+|          curr_title|total_search|
++--------------------+------------+
+|           Main_Page|     4171329|
+|Fifty_Shades_of_Grey|     1903372|
+|          Chris_Kyle|     1293055|
+|    Alessandro_Volta|     1160284|
+|     Stephen_Hawking|     1037257|
+|    Better_Call_Saul|      989149|
+|      Birdman_(film)|      982244|
+|Fifty_Shades_of_G...|      877027|
+|     Valentine's_Day|      831627|
+| 87th_Academy_Awards|      794562|
+|Islamic_State_of_...|      775541|
+|    Chinese_New_Year|      740223|
+|       Leonard_Nimoy|      683814|
+|List_of_Bollywood...|      653926|
+|        Bruce_Jenner|      629555|
+|      Sia_(musician)|      618234|
+|      Lunar_New_Year|      602595|
+|      Dakota_Johnson|      598695|
+|The_Walking_Dead_...|      581170|
+|The_Flash_(2014_T...|      558487|
++--------------------+------------+
+only showing top 20 rows
+```
 
 Why are these the top topics searched in Feb 2015
 
@@ -318,189 +323,127 @@ __Events or Occassions__
 
 
 ```python
-def fromSocialNetwork(prevTitle):
-    searchProviders = ['other-twitter','other-facebook']
-    if prevTitle in searchProviders:
-        return True
-    else:
-        return False
+def fromSocialNetwork(prevTitle:String) : Boolean = {
+  val socialProviders = List("other-twitter","other-facebook")
+  if (socialProviders.contains(prevTitle))
+    {
+      return true
+    }
+  else
+    {
+      return false
+    }
+}
 ```
 
 ##### 4.1.2 Create an UDF to supply fromSocialNetwork as filter function
 
 
 ```python
-social_filter = udf(fromSocialNetwork,BooleanType())
-clickSocial = clickDF.filter(social_filter(clickDF.prev_title))
+val social_filter = udf(fromSocialNetwork _)
+val clickSocial = clickDF.filter(social_filter($"prev_title"))
 clickSocial.show()
 ```
 
-    +--------+--------------------+---+-------+--------------+-----+
-    | curr_id|          curr_title|  n|prev_id|    prev_title| type|
-    +--------+--------------------+---+-------+--------------+-----+
-    |  331586|  "Crocodile"_Dundee| 20|     -1| other-twitter|other|
-    | 1261557|            "Heroes"| 13|     -1| other-twitter|other|
-    | 3564374|     "I_AM"_Activity| 33|     -1|other-facebook|other|
-    | 3564374|     "I_AM"_Activity| 24|     -1| other-twitter|other|
-    |18938265| "Weird_Al"_Yankovic|406|     -1| other-twitter|other|
-    |18938265| "Weird_Al"_Yankovic| 33|     -1|other-facebook|other|
-    | 7630017|"Weird_Al"_Yankov...| 67|     -1| other-twitter|other|
-    | 1578140|                  %s| 13|     -1| other-twitter|other|
-    |    2676|    'Abd_al-Rahman_I| 16|     -1| other-twitter|other|
-    |  430164|        'Allo_'Allo!| 13|     -1|other-facebook|other|
-    |  430164|        'Allo_'Allo!| 67|     -1| other-twitter|other|
-    |  175149|        'Pataphysics| 36|     -1|other-facebook|other|
-    |  175149|        'Pataphysics| 96|     -1| other-twitter|other|
-    | 1917971|                  's| 12|     -1| other-twitter|other|
-    |   50338|    's-Hertogenbosch| 16|     -1|other-facebook|other|
-    |   50338|    's-Hertogenbosch| 10|     -1| other-twitter|other|
-    |42995159|  (357439)_2004_BL86| 30|     -1|other-facebook|other|
-    |42995159|  (357439)_2004_BL86| 24|     -1| other-twitter|other|
-    | 1506853|(Don't_Fear)_The_...|172|     -1| other-twitter|other|
-    | 2448083|(Everything_I_Do)...| 16|     -1| other-twitter|other|
-    +--------+--------------------+---+-------+--------------+-----+
-    only showing top 20 rows
+```
++-------+--------+---+--------------+--------------------+-----+
+|prev_id| curr_id|cnt|    prev_title|          curr_title|  typ|
++-------+--------+---+--------------+--------------------+-----+
+|       |  331586| 20| other-twitter|  "Crocodile"_Dundee|other|
+|       | 1261557| 13| other-twitter|            "Heroes"|other|
+|       | 3564374| 33|other-facebook|     "I_AM"_Activity|other|
+|       | 3564374| 24| other-twitter|     "I_AM"_Activity|other|
+|       |18938265|406| other-twitter| "Weird_Al"_Yankovic|other|
+|       |18938265| 33|other-facebook| "Weird_Al"_Yankovic|other|
+|       | 7630017| 67| other-twitter|"Weird_Al"_Yankov...|other|
+|       | 1578140| 13| other-twitter|                  %s|other|
+|       |    2676| 16| other-twitter|    'Abd_al-Rahman_I|other|
+|       |  430164| 13|other-facebook|        'Allo_'Allo!|other|
+|       |  430164| 67| other-twitter|        'Allo_'Allo!|other|
+|       |  175149| 36|other-facebook|        'Pataphysics|other|
+|       |  175149| 96| other-twitter|        'Pataphysics|other|
+|       | 1917971| 12| other-twitter|                  's|other|
+|       |   50338| 16|other-facebook|    's-Hertogenbosch|other|
+|       |   50338| 10| other-twitter|    's-Hertogenbosch|other|
+|       |42995159| 30|other-facebook|  (357439)_2004_BL86|other|
+|       |42995159| 24| other-twitter|  (357439)_2004_BL86|other|
+|       | 1506853|172| other-twitter|(Don't_Fear)_The_...|other|
+|       | 2448083| 16| other-twitter|(Everything_I_Do)...|other|
++-------+--------+---+--------------+--------------------+-----+
+only showing top 20 rows
 
-
+```
 
 ##### 4.1.3 Find the top pages referred from social network sites
 
 
 ```python
-socialVolume = clickSocial.groupBy(clickSearch.curr_title).agg(F.sum('n').alias('total_social')).orderBy('total_social',ascending=False)
+val socialVolume = clickSocial.groupBy(col("curr_title")).agg(sum(col("cnt")).alias("total_social")).orderBy($"total_social".desc)
 socialVolume.show()
 ```
 
-    +--------------------+------------+
-    |          curr_title|total_social|
-    +--------------------+------------+
-    |    Johnny_Knoxville|      198976|
-    |      Peter_Woodcock|      126378|
-    |2002_Tampa_plane_...|      120955|
-    |      Sơn_Đoòng_Cave|      116126|
-    |       The_boy_Jones|      114524|
-    |             War_pig|      114138|
-    |William_Leonard_P...|      113906|
-    |Hurt_(Nine_Inch_N...|      103562|
-    |     Glass_recycling|       87995|
-    |Assassination_of_...|       86445|
-    |    Fury_(2014_film)|       80297|
-    |    Mullet_(haircut)|       73613|
-    |            Iron_Man|       69772|
-    |International_Mat...|       64475|
-    |Pirates_of_the_Ca...|       63517|
-    |            Asbestos|       62987|
-    |       Benjaman_Kyle|       61130|
-    |            New_Deal|       59854|
-    |     Bobbie_Joe_Long|       59836|
-    |        David_Reimer|       59136|
-    +--------------------+------------+
-    only showing top 20 rows
+```
++--------------------+------------+
+|          curr_title|total_social|
++--------------------+------------+
+|    Johnny_Knoxville|      198976|
+|      Peter_Woodcock|      126378|
+|2002_Tampa_plane_...|      120955|
+|      Sơn_Đoòng_Cave|      116126|
+|       The_boy_Jones|      114524|
+|             War_pig|      114138|
+|William_Leonard_P...|      113906|
+|Hurt_(Nine_Inch_N...|      103562|
+|     Glass_recycling|       87995|
+|Assassination_of_...|       86445|
+|    Fury_(2014_film)|       80297|
+|    Mullet_(haircut)|       73613|
+|            Iron_Man|       69772|
+|International_Mat...|       64475|
+|Pirates_of_the_Ca...|       63517|
+|            Asbestos|       62987|
+|       Benjaman_Kyle|       61130|
+|            New_Deal|       59854|
+|     Bobbie_Joe_Long|       59836|
+|        David_Reimer|       59136|
++--------------------+------------+
+only showing top 20 rows
 
+```
 
 
 ####  4.2 Analysis using Spark SQL
 
 
 ```python
-clickSocialSQL = sqlCtx.sql("select curr_title,sum(n) as total_search from wikiclickstream where prev_title in ('other-twitter','other-facebook') group by curr_title order by total_search desc")
+val clickSocialSQL = sqlContext.sql("select curr_title,sum(cnt) as total_search from wikiclickstream where prev_title in ('other-twitter','other-facebook') group by curr_title order by total_search desc")
 clickSocialSQL.show()
 ```
 
-    +--------------------+------------+
-    |          curr_title|total_search|
-    +--------------------+------------+
-    |    Johnny_Knoxville|      198976|
-    |      Peter_Woodcock|      126378|
-    |2002_Tampa_plane_...|      120955|
-    |      Sơn_Đoòng_Cave|      116126|
-    |       The_boy_Jones|      114524|
-    |             War_pig|      114138|
-    |William_Leonard_P...|      113906|
-    |Hurt_(Nine_Inch_N...|      103562|
-    |     Glass_recycling|       87995|
-    |Assassination_of_...|       86445|
-    |    Fury_(2014_film)|       80297|
-    |    Mullet_(haircut)|       73613|
-    |            Iron_Man|       69772|
-    |International_Mat...|       64475|
-    |Pirates_of_the_Ca...|       63517|
-    |            Asbestos|       62987|
-    |       Benjaman_Kyle|       61130|
-    |            New_Deal|       59854|
-    |     Bobbie_Joe_Long|       59836|
-    |        David_Reimer|       59136|
-    +--------------------+------------+
-    only showing top 20 rows
-
-
-
-### 5 Which referred pages lead to maximum broken links
-
-A Broken link is a wikilink on the referring page pointing to a wikipage that does not exist
-
-
-```python
-brokenLinks = clickDF.filter(clickDF.curr_id == -1)
-brokenLinks.show()
 ```
++--------------------+------------+
+|          curr_title|total_search|
++--------------------+------------+
+|    Johnny_Knoxville|      198976|
+|      Peter_Woodcock|      126378|
+|2002_Tampa_plane_...|      120955|
+|      Sơn_Đoòng_Cave|      116126|
+|       The_boy_Jones|      114524|
+|             War_pig|      114138|
+|William_Leonard_P...|      113906|
+|Hurt_(Nine_Inch_N...|      103562|
+|     Glass_recycling|       87995|
+|Assassination_of_...|       86445|
+|    Fury_(2014_film)|       80297|
+|    Mullet_(haircut)|       73613|
+|            Iron_Man|       69772|
+|International_Mat...|       64475|
+|Pirates_of_the_Ca...|       63517|
+|            Asbestos|       62987|
+|       Benjaman_Kyle|       61130|
+|            New_Deal|       59854|
+|     Bobbie_Joe_Long|       59836|
+|        David_Reimer|       59136|
++--------------------+------------+
 
-    +-------+--------------------+---+--------+--------------------+-------+
-    |curr_id|          curr_title|  n| prev_id|          prev_title|   type|
-    +-------+--------------------+---+--------+--------------------+-------+
-    |     -1|   "Bigfoot"_Wallace| 15|11273993|Colt_1851_Navy_Re...|redlink|
-    |     -1|"Chúc_Mừng_Năm_Mớ...| 51|   69161|                 Tết|redlink|
-    |     -1|"Cool_Hand_Conor"...| 14| 1438509|List_of_Old_West_...|redlink|
-    |     -1|"D"_Is_for_Dubby_...| 47| 4619790|            Puscifer|redlink|
-    |     -1|"D"_Is_for_Dubby_...| 43|16079543|"V"_Is_for_Viagra...|redlink|
-    |     -1|"D"_Is_for_Dubby_...| 18|25033979|"C"_is_for_(Pleas...|redlink|
-    |     -1|"EXO_Music_Video_...| 23|39737124|         Yoon_So-hee|redlink|
-    |     -1|"Firth"_logistic_...| 24|29668256|Separation_(stati...|redlink|
-    |     -1|"Future_(rapper)"...| 20| 1696824|   Kirkwood,_Atlanta|redlink|
-    |     -1|     "Knockin'_Boots| 10| 2110406|        Pretty_Ricky|redlink|
-    |     -1| "Mothercare"_spider| 20| 3419979|    Woodlouse_spider|redlink|
-    |     -1|"One_Arm_Bill"_Wi...| 13|25133882|Goodnight–Loving_...|redlink|
-    |     -1|          "That_Man"| 14|24961418|        Caro_Emerald|redlink|
-    |     -1|"The_Mills",_Andr...| 12| 1442421|Chadds_Ford_Towns...|redlink|
-    |     -1| "Tinker_Dave"_Beaty| 24| 2804228|      Champ_Ferguson|redlink|
-    |     -1|         "et_cetera"|115|  202033|                 ECT|redlink|
-    |     -1|              "etc."|244|  202033|                 ECT|redlink|
-    |     -1| '''Akhand_Bharat'''| 37|30863671|List_of_newspaper...|redlink|
-    |     -1| '''Dainik_Jagran'''| 84|30863671|List_of_newspaper...|redlink|
-    |     -1|'''Luppak_state''...| 10|18934934|    Read-only_memory|redlink|
-    +-------+--------------------+---+--------+--------------------+-------+
-    only showing top 20 rows
-
-
-
-
-```python
-clickBrokenLinks = clickDF.filter(clickDF.curr_id == -1).groupBy('prev_title').agg(F.sum(clickDF.n).alias('total_broken')).orderBy('total_broken',ascending=False)
-clickBrokenLinks.show()
 ```
-
-    +--------------------+------------+
-    |          prev_title|total_broken|
-    +--------------------+------------+
-    |List_of_adult_tel...|       16812|
-    |      Deaths_in_2015|       10184|
-    |  Illusion_(company)|        9552|
-    |List_of_festivals...|        7673|
-    |2023_Cricket_Worl...|        7447|
-    |         Tom_Selleck|        6434|
-    |           Sinusitis|        5715|
-    |  Outline_of_thought|        5314|
-    |Meri_Aashiqui_Tum...|        4989|
-    |List_of_TVB_drama...|        4739|
-    |List_of_UPnP_AV_m...|        4391|
-    |List_of_oil_refin...|        4313|
-    |List_of_Tamil_fil...|        4287|
-    |The_Bachelor_(U.S...|        3927|
-    |Saath_Nibhaana_Sa...|        3875|
-    |        Pawan_Kalyan|        3764|
-    |Nisha_Aur_Uske_Co...|        3661|
-    |    2014_Mr._Olympia|        3461|
-    |        Marc_Anthony|        3408|
-    |List_of_Victoria'...|        3284|
-    +--------------------+------------+
-    only showing top 20 rows
